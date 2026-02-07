@@ -5,48 +5,59 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useServices } from '../contexts/ServiceContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SERVICE_STATUS_COLORS } from '../utils/constants';
 import StatusBadge from '../components/StatusBadge';
+import { useNavigation } from '@react-navigation/native';
 
 const DashboardScreen: React.FC = () => {
   const { user } = useAuth();
   const { services, getDashboardStats } = useServices();
+  const navigation = useNavigation();
   const stats = getDashboardStats();
+
+  const handleStatCardPress = (status: string) => {
+    (navigation as any).navigate('Services', { statusFilter: status });
+  };
 
   const recentServices = services.slice(0, 5);
 
   const statCards = [
     {
-      title: 'Total Services',
+      title: 'Total Servicios',
       value: stats.totalServices,
       icon: 'assignment',
       color: '#2563eb',
       bgColor: '#dbeafe',
+      status: 'all' as const,
     },
     {
-      title: 'Requested',
+      title: 'Solicitados',
       value: stats.requestedServices,
       icon: 'schedule',
       color: '#f59e0b',
       bgColor: '#fef3c7',
+      status: 'requested' as const,
     },
     {
-      title: 'In Progress',
+      title: 'En Progreso',
       value: stats.inProgressServices,
       icon: 'loop',
       color: '#8b5cf6',
       bgColor: '#ede9fe',
+      status: 'in-progress' as const,
     },
     {
-      title: 'Completed',
+      title: 'Completados',
       value: stats.completedServices,
       icon: 'check-circle',
       color: '#10b981',
       bgColor: '#d1fae5',
+      status: 'completed' as const,
     },
   ];
 
@@ -60,13 +71,18 @@ const DashboardScreen: React.FC = () => {
 
       <View style={styles.statsGrid}>
         {statCards.map((stat, index) => (
-          <View key={index} style={[styles.statCard, { backgroundColor: stat.bgColor }]}>
+          <TouchableOpacity 
+            key={index} 
+            style={[styles.statCard, { backgroundColor: stat.bgColor }]}
+            onPress={() => handleStatCardPress(stat.status)}
+            activeOpacity={0.7}
+          >
             <View style={[styles.statIcon, { backgroundColor: stat.color }]}>
               <MaterialIcons name={stat.icon as any} size={24} color="#ffffff" />
             </View>
             <Text style={styles.statValue}>{stat.value}</Text>
             <Text style={styles.statTitle}>{stat.title}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
 
@@ -95,13 +111,19 @@ const DashboardScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={styles.actionCard}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('CreateService' as never)}
+            >
               <MaterialIcons name="add-circle" size={24} color="#2563eb" />
-              <Text style={styles.actionText}>Create Service</Text>
+              <Text style={styles.actionText}>Crear Servicio</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCard}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('Reports' as never)}
+            >
               <MaterialIcons name="assessment" size={24} color="#2563eb" />
-              <Text style={styles.actionText}>View Reports</Text>
+              <Text style={styles.actionText}>Ver Reportes</Text>
             </TouchableOpacity>
           </View>
         </View>

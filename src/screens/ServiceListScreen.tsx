@@ -11,6 +11,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useServices } from '../contexts/ServiceContext';
+import { useRoute } from '@react-navigation/native';
 import { ServiceStatus, ServiceType } from '../types';
 import { SERVICE_TYPES, formatDate } from '../utils/constants';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,39 +20,31 @@ import StatusBadge from '../components/StatusBadge';
 const ServiceListScreen: React.FC = () => {
   const { user } = useAuth();
   const { services, isLoading } = useServices();
+  const route = useRoute();
   const [filteredServices, setFilteredServices] = useState(services);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ServiceStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<ServiceType | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
 
+// Aplicar filtro inicial si viene del dashboard
   useEffect(() => {
-    let filtered = services;
-
-    if (user?.role !== 'coordinator') {
-      filtered = filtered.filter(service => 
-        service.doctorId === user?.id || service.nurseId === user?.id
-      );
+    if ((route.params as any)?.statusFilter) {
+      setStatusFilter((route.params as any).statusFilter);
     }
+  }, [(route.params as any)?.statusFilter]);
 
-    if (searchTerm) {
-      filtered = filtered.filter(service =>
-        service.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.patientAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.notes.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(service => service.status === statusFilter);
-    }
-
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(service => service.type === typeFilter);
-    }
-
-    setFilteredServices(filtered);
-  }, [services, searchTerm, statusFilter, typeFilter, user]);
+  const getStatusDisplayName = (status: ServiceStatus | 'all') => {
+    const statusNames: Record<ServiceStatus | 'all', string> = {
+      'all': 'Todos',
+      'requested': 'Solicitados',
+      'assigned': 'Asignados',
+      'in-progress': 'En Progreso',
+      'completed': 'Completados',
+      'cancelled': 'Cancelados'
+    };
+    return statusNames[status] || status;
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -69,9 +62,12 @@ const ServiceListScreen: React.FC = () => {
       }
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Services</Text>
+        <Text style={styles.title}>Servicios</Text>
         <Text style={styles.subtitle}>
-          Manage and track medical home services
+          {statusFilter !== 'all' 
+            ? `Mostrando servicios con estado: ${getStatusDisplayName(statusFilter)}`
+            : 'Gestionar y rastrear servicios médicos domiciliarios'
+          }
         </Text>
       </View>
 
@@ -80,7 +76,7 @@ const ServiceListScreen: React.FC = () => {
           <MaterialIcons name="search" size={20} color="#6b7280" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search services..."
+            placeholder="Buscar servicios..."
             value={searchTerm}
             onChangeText={setSearchTerm}
             placeholderTextColor="#6b7280"
@@ -93,7 +89,7 @@ const ServiceListScreen: React.FC = () => {
             onPress={() => setStatusFilter(statusFilter === 'all' ? 'requested' : 'all')}
           >
             <Text style={[styles.filterText, statusFilter !== 'all' && styles.filterTextActive]}>
-              Status
+              Estado
             </Text>
           </TouchableOpacity>
           
@@ -102,7 +98,7 @@ const ServiceListScreen: React.FC = () => {
             onPress={() => setTypeFilter(typeFilter === 'all' ? 'basic-transport' : 'all')}
           >
             <Text style={[styles.filterText, typeFilter !== 'all' && styles.filterTextActive]}>
-              Type
+              Tipo
             </Text>
           </TouchableOpacity>
         </View>
@@ -151,11 +147,11 @@ const ServiceListScreen: React.FC = () => {
         ) : (
           <View style={styles.emptyState}>
             <MaterialIcons name="assignment" size={60} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>No services found</Text>
+            <Text style={styles.emptyTitle}>No se encontraron servicios</Text>
             <Text style={styles.emptyMessage}>
               {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                ? 'Try adjusting your filters or search terms'
-                : 'Get started by creating your first service'}
+                ? 'Intenta ajustar tus filtros o términos de búsqueda'
+                : 'Comienza creando tu primer servicio'}
             </Text>
           </View>
         )}
